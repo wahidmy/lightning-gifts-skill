@@ -210,3 +210,9 @@ Expiry is not a status; it is the gift's `expiry` timestamp.
 
 Numbers move: fees, ceilings and caps are operational settings of a running deployment. Confirm one
 before quoting it, and never hard-code a ceiling into a script.
+
+## Licence
+
+Blue Oak Model License 1.0.0 — <https://blueoakcouncil.org/license/1.0.0>. The full text ships inside
+this skill directory as `LICENSE`, so every installed copy carries it; if you share only this file,
+the link above is the required reference.

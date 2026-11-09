@@ -50,5 +50,10 @@ If the two disagree, the service wins and this repository has a bug. Issues are 
 own modifications: permissive, with an explicit patent grant and no attribution requirement beyond
 shipping the licence text.
 
+The repo root's `LICENSE` is also copied inside `skills/lightning-gifts/LICENSE` so that installer
+bundles (which fetch only the skill directory) ship the text Blue Oak's `Notices` clause requires.
+Keep the two copies byte-identical (sha256 `5b5914db…`); the `SKILL.md` licence section carries the
+canonical link for any bare-file copy.
+
 The service itself is a fork of [Lightsats](https://github.com/lightsats/lightsats), whose portions
 remain MIT; see [lightning.gifts/about](https://lightning.gifts/about).
