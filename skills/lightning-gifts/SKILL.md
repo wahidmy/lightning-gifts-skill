@@ -179,13 +179,13 @@ Expiry is not a status; it is the gift's `expiry` timestamp.
 - **Failure codes ride in the error text:** `insufficient_liquidity`, `no_route`, `invoice_expired`,
   `already_paid`, `self_payment`, `lnbits_unavailable`, `payment_failed`, `payment_unconfirmed`,
   `unknown`. Read the code, not just the status.
-- **Deleting a gift is guarded, and can be refused while undone.** `DELETE` fails closed unless both
-  the funding invoice is unpaid and the gift's own wallet reads zero — and it must first **cancel**
-  the invoice so late settlement is impossible. When LNbits refuses the cancel (measured: a `404`
-  on a fresh gift), a `409` comes back with the reason in the operator log, and the gift stays
-  alive; the promise "deleting after expiry will succeed" refers to the *funding invoice's* own
-  expiry, not the gift's. A polled `UNFUNDED` is not proof; if the invoice turns out to be paid the
-  answer is `409` and the gift flips to `UNSEEN` rather than deleting.
+- **`DELETE` refuses closed unless it can prove the funding wallet is safe.** The route claims the
+  gift, cancels the funding invoice so late settlement is impossible (on LNbits v1.6.2 that means
+  `POST /api/v1/payments/cancel` with the JSON body `{"payment_hash": …}` — the path-form and a JSON
+  body without `Content-Type` both answer 400), destroys the wallet, and answers `204` only after
+  LNbits confirms. Any guard failure restores `UNFUNDED` and refuses — `409`/`502`, with the real
+  reason always in the operator log. A paid invoice answers `409` and the gift flips to `UNSEEN`
+  rather than deleting. Since the service's v0.8.22 this is the normal successful path.
 - **Status flips are observed, not commanded.** There is no endpoint that marks a gift funded.
 
 ## Failure → action

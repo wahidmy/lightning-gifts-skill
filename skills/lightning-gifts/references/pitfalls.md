@@ -58,19 +58,16 @@ The edge refuses some default script-library agents — a bare `Python-urllib` g
 and named agents pass. Set a descriptive `User-Agent` before you start debugging credentials, or you
 will chase a key that was never the problem.
 
-## 8. `DELETE` can refuse even a fresh, never-paid gift
+## 8. `DELETE` fails closed, and you will not see why without the operator log
 
-`DELETE /api/gifts/{id}` re-checks the gift's own wallet before removing it and fails closed. If the
-funding invoice turns out to have been paid, it answers `409` and flips the gift to `UNSEEN` instead
-of deleting. Treat the delete as advisory: re-read the gift, and if it is now `UNSEEN`, the gift is
-alive and you have a funded gift, not a deleted one.
-
-Measured (2026-11-09, a brand-new unfunded gift): the answer was `409` *before any payment existed*,
-because the route first cancels the funding invoice so it can never settle against a destroyed
-wallet, and LNbits answered the cancel with `404 Not Found`. The refusal reason is always in the
-operator log (`Refusing to delete gift <id>: …cancel… failed: 404`), and the same log line promises
-"deleting after expiry will succeed" — meaning the **funding invoice's** own expiry, not the gift's.
-Never conclude from a `409` that a secret payment happened; read the log line before you interpret it.
+`DELETE` claims the gift, cancels the funding invoice so late settlement is impossible, destroys the
+gift's own LNbits wallet, and only then answers `204` (gift status → `DELETED`). Every failure path
+restores `UNFUNDED` and refuses with `409` (guard failure) or `502` (LNbits delete failure); the
+reason is always visible only in the operator log — `200` "invoice cancelled", wallet `200`, or the
+exact upstream error. Read the log before any interpretation: a `409` never means a mystery payment
+arrived — a paid invoice is detected separately and flips the gift to `UNSEEN` with its `409`.
+The refusal sentence "deleting after expiry will succeed" means the *funding invoice's* own expiry,
+not the gift's. (Downstream from v0.8.22, which made the cancel call actually work.)
 
 ## 9. The payout invoice must be the exact total
 
