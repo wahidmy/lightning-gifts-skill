@@ -8,6 +8,17 @@ service itself.
 npx skills add wahidmy/lightning-gifts-skill
 ```
 
+Two other channels, both serving the bundle Hermes scans:
+
+```bash
+hermes skills install well-known:https://lightning.gifts/.well-known/skills/lightning-gifts
+hermes skills tap add wahidmy/lightning-gifts-skill
+```
+
+The service at [lightning.gifts](https://lightning.gifts) publishes a pinned mirror of this skill at
+`/.well-known/skills/` (index + SKILL.md + references + LICENSE), so the Hermes Skills Hub can list
+and install it straight from the deployment that runs the API.
+
 Installs one skill, `lightning-gifts`, into whichever agent directories you pick during the prompt.
 
 ## What it covers
