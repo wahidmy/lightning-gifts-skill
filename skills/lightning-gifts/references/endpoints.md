@@ -52,37 +52,43 @@ Include this when you explain the gift to the recipient; you do not drive it.
 
 ## Worked examples
 
+Every command below is written with literal values — no shell variables — so it is copy-paste-safe
+and trivial to read: the base URL is always `https://lightning.gifts`, the User-Agent is always
+`lightning-gifts-skill/1.0`, and `<your-api-key>` is the one value you must supply (from your secret
+store, never a file committed to the repo).
+
 ```bash
-export APP_URL="https://lightning.gifts"
-export UA="lightning-gifts-skill/1.0"
-export GIFT_KEY="<per-user API key>"
-
 # 1. can this deployment receive money right now?
-curl -sS -A "$UA" "$APP_URL/api/payments-capability"
+curl -sS -A "lightning-gifts-skill/1.0" https://lightning.gifts/api/payments-capability
 
-# 2. create: amount is SATS; expiry is future and ≤90 days
-curl -sS -A "$UA" -X POST "$APP_URL/api/gifts" \
-  -H "Authorization: Bearer $GIFT_KEY" -H 'Content-Type: application/json' \
-  -d '{"amount":21000,"currency":"USD","expiry":"2026-12-24T00:00:00.000Z",
+# 2. create: amount is SATS; expiry is future and <=90 days
+curl -sS -A "lightning-gifts-skill/1.0" -X POST https://lightning.gifts/api/gifts \
+  -H "Authorization: Bearer <your-api-key>" -H "Content-Type: application/json" \
+  -d '{"amount":21000,"currency":"USD","expiry":"<future ISO, <=90 days out>",
        "onboardingFlow":"DEFAULT","tippeeLocale":"en","anonymousTipper":false,
        "generatePassphrase":false,"passphraseLength":4}'
 
-# 3. pay .invoice, then watch the gift flip UNFUNDED -> UNSEEN (no confirm endpoint)
-curl -sS -A "$UA" "$APP_URL/api/gifts/<id>" -H "Authorization: Bearer $GIFT_KEY"
+# 3. watch the gift flip UNFUNDED -> UNSEEN after you pay the invoice (no confirm endpoint)
+curl -sS -A "lightning-gifts-skill/1.0" https://lightning.gifts/api/gifts/<id> \
+  -H "Authorization: Bearer <your-api-key>"
 
 # 4. mint the claim link — this is the credential you hand over
-curl -sS -A "$UA" -X POST "$APP_URL/api/gifts/<id>/claimToken" \
-  -H "Authorization: Bearer $GIFT_KEY" -H 'Content-Type: application/json' -d '{}'
+curl -sS -A "lightning-gifts-skill/1.0" -X POST https://lightning.gifts/api/gifts/<id>/claimToken \
+  -H "Authorization: Bearer <your-api-key>" -H "Content-Type: application/json" -d "{}"
 
-# 5. reclaim, after expiry only
-curl -sS -A "$UA" -X POST "$APP_URL/api/gifts/<id>/reclaim" \
-  -H "Authorization: Bearer $GIFT_KEY"
+# 5. reclaim, after expiry only, funded gifts only
+curl -sS -A "lightning-gifts-skill/1.0" -X POST https://lightning.gifts/api/gifts/<id>/reclaim \
+  -H "Authorization: Bearer <your-api-key>"
 
 # 6. pay yourself out of the reclaimed balance (exact total, or 500)
-curl -sS -A "$UA" -X POST "$APP_URL/api/invoices" \
-  -H "Authorization: Bearer $GIFT_KEY" -H 'Content-Type: application/json' \
-  -d '{"flow":"tipper","invoice":"<BOLT11 for the exact total>"}'
+curl -sS -A "lightning-gifts-skill/1.0" -X POST https://lightning.gifts/api/invoices \
+  -H "Authorization: Bearer <your-api-key>" -H "Content-Type: application/json" \
+  -d '{"flow":"tipper","invoice":"<BOLT11 invoice for the exact total>"}'
 ```
+
+The API is never called with a key that has been committed anywhere, sent in a URL, echoed into a
+log line, or patched together by shell interpolation: `Authorization: Bearer …` travels in a
+header, exactly as shown above.
 
 ## Error bodies
 
