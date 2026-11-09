@@ -46,6 +46,9 @@ If the two disagree, the service wins and this repository has a bug. Issues are 
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE). The lightning.gifts service itself is a fork of
-[Lightsats](https://github.com/lightsats/lightsats) (MIT) with modifications under the Blue Oak Model
-License 1.0.0.
+[Blue Oak Model License 1.0.0](LICENSE) — the same licence the lightning.gifts service uses for its
+own modifications: permissive, with an explicit patent grant and no attribution requirement beyond
+shipping the licence text.
+
+The service itself is a fork of [Lightsats](https://github.com/lightsats/lightsats), whose portions
+remain MIT; see [lightning.gifts/about](https://lightning.gifts/about).

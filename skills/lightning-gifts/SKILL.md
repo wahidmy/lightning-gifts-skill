@@ -1,7 +1,7 @@
 ---
 name: lightning-gifts
 description: Create and fund bitcoin gifts over the Lightning Network with the lightning.gifts API — sign in, mint a gift, pay its BOLT11 invoice, hand off a claim link, reclaim an expired one. Use when sending someone bitcoin as a gift, or when a task mentions lightning.gifts, gifting sats, or a gift's funding invoice.
-license: MIT
+license: BlueOak-1.0.0
 metadata:
   homepage: https://lightning.gifts
   api-reference: https://lightning.gifts/api-docs.md
