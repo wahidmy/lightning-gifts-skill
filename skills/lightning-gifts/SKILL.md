@@ -102,7 +102,9 @@ Done when you hold a gift `id` and its `invoice`.
 
 ### 4. Pay the funding invoice
 
-Pay `invoice` for **exactly** its amount from your own wallet. Nothing calls the service: it polls
+Pay `invoice` from your own wallet for exactly what it asks — it prices `amount + fee` itself
+(a 100-sat gift invoices 200 sats, because the 100-sat fee floor governs). Payment record `fee`
+lives on the gift, separate from anyone's withdrawable total. Nothing calls the service: it polls
 its own invoice and flips `UNFUNDED → UNSEEN` about a second after settlement. There is no "confirm
 payment" endpoint, and `/api/webhooks/invoices` answers `410` by design.
 
@@ -134,7 +136,10 @@ withdraw the exact total to an invoice from their own wallet.
 
 ### 7. Reclaim a gift that expired unclaimed
 
-Only `UNFUNDED`, `UNSEEN`, `SEEN` and `CLAIMED` gifts are reclaimable, and only after `expiry`:
+Only **funded** gifts are reclaimable — `UNSEEN`, `SEEN`, `CLAIMED` and `WITHDRAWAL_FAILED` — and
+only after `expiry`. An `UNFUNDED` gift is not reclaimable no matter how stale it is: nothing ever
+arrived to give back. (The site map's prose says otherwise; `refundableTipStatuses` in the API is
+the truth, and an expired unfunded gift answers `409`.)
 
 ```http
 GET  /api/gifts?expired=true&reclaimable=true        (operator key)
@@ -174,9 +179,13 @@ Expiry is not a status; it is the gift's `expiry` timestamp.
 - **Failure codes ride in the error text:** `insufficient_liquidity`, `no_route`, `invoice_expired`,
   `already_paid`, `self_payment`, `lnbits_unavailable`, `payment_failed`, `payment_unconfirmed`,
   `unknown`. Read the code, not just the status.
-- **Deleting a gift is guarded.** `DELETE` re-checks the gift's own wallet and fails closed; a polled
-  `UNFUNDED` is not proof. If the invoice turns out to be paid it answers `409` and flips the gift to
-  `UNSEEN` rather than deleting.
+- **Deleting a gift is guarded, and can be refused while undone.** `DELETE` fails closed unless both
+  the funding invoice is unpaid and the gift's own wallet reads zero — and it must first **cancel**
+  the invoice so late settlement is impossible. When LNbits refuses the cancel (measured: a `404`
+  on a fresh gift), a `409` comes back with the reason in the operator log, and the gift stays
+  alive; the promise "deleting after expiry will succeed" refers to the *funding invoice's* own
+  expiry, not the gift's. A polled `UNFUNDED` is not proof; if the invoice turns out to be paid the
+  answer is `409` and the gift flips to `UNSEEN` rather than deleting.
 - **Status flips are observed, not commanded.** There is no endpoint that marks a gift funded.
 
 ## Failure → action
@@ -185,7 +194,7 @@ Expiry is not a status; it is the gift's `expiry` timestamp.
 | --- | --- | --- |
 | `401` | no credential accepted | check the Bearer key, not the route |
 | `403` | valid credential, wrong user — or the edge rejected the `User-Agent` | use the owner's key; set a real UA |
-| `409` | gift already claimed, caller is the giver, expired, or not mintable | re-read the gift; mint only funded, unclaimed, unexpired |
+| `409` | not in the state the route wants: already claimed, giver is the caller, expired, not funded, or the invoice-cancel guard refused | re-read the gift; mint only funded+unclaimed+unexpired; accept that an unfunded gift cannot be reclaimed |
 | `410` | the URL had no `?ct=` (or the token was spent) | mint a fresh claim link; never reuse one |
 | `422` | this wallet's invoice cap is lower than `amount + fee` | the body names `maxSats`; lower the gift |
 | `429` | rate limited (claim mints 30/min, reclaim 10/min) | back off; do not retry in a loop |
