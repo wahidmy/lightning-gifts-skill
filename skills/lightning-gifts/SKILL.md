@@ -122,8 +122,11 @@ token is the recipient's only handle. `{"printed": true}` mints to the gift's ow
 reserve it for a card you are physically printing. Refused with `409` unless the gift is funded,
 unclaimed and unexpired.
 
-Done when you hold a `claimUrl` containing `?ct=`. Never compose that URL from the id yourself: a
-bare `/tips/{id}/claim` answers `410` and claims nothing.
+Done when you hold a `claimUrl` containing `?ct=`. Never compose that URL from the id yourself: the
+claim **action** (`POST /api/received-gifts/{id}/claim`) answers `410` without a valid one-time
+token and claims nothing. The claim **page** (`GET /tips/{id}/claim`) is a client-rendered shell
+that answers `200` whether the token is valid, absent or garbage — its status proves nothing,
+measured on production (2026-11-09, Pepper's run).
 
 ### 6. Hand it over
 

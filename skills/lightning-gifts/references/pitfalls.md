@@ -2,16 +2,19 @@
 
 Each entry says what goes wrong, why, and what to do instead.
 
-## 1. A gift id is not a claim link
+## 1. A gift id is not a claim link — and the claim page's status proves nothing
 
-`https://lightning.gifts/tips/<id>/claim` answers `410` and claims nothing. Since the 2026-10-29
-security cutover a claim URL carries a one-time token (`?ct=<32 hex>`) minted by
-`POST /api/gifts/{id}/claimToken`, and the claim route consumes it atomically. The link is a
-credential; the id is a public identifier.
+`POST /api/received-gifts/{id}/claim` (the claim action) answers `410` and claims nothing without a
+one-time token (`?ct=<32 hex>`, minted by `POST /api/gifts/{id}/claimToken`, consumed atomically);
+a spent or expired token answers `410` too (`LINK_ALREADY_USED`). The claim **page**
+(`GET /tips/<id>/claim`) is a client-rendered shell: it answers `200` for a bare id, a valid token
+and a garbage token alike, measured on production — never use the page's status to judge a token.
+The id is a public identifier, the token in the link is the credential.
 
 Mint a fresh link for every handoff, and mint again rather than resend a spent one. TTLs: 7 days for
 a normal gift (never past its expiry), 30 days for a `SKIP` gift because that token is the recipient's
-only handle, and the gift's own expiry for `{"printed": true}`.
+only handle, and the gift's own expiry for `{"printed": true}`. The mint response carries **no TTL
+field**, so a caller cannot read the lifetime back — treat it as server-side policy.
 
 ## 2. Minting fails when the gift is not ready, and the link is dead anyway
 
@@ -43,6 +46,8 @@ or trigger the validation error and read it.
 The fee is 1% with a 100-sat floor, computed on `amount + fee` so the reserve stays above 1%:
 `fee = max(100, ceil((amount + max(100, ceil(amount/100))) / 100))`. The floor governs below roughly
 10,000 sats. A `422` means the backing wallet's invoice cap is lower still; its body names `maxSats`.
+Economics, measured: a 121-sat gift invoices 221 sats — on dust gifts the flat fee dominates the gift
+value itself, so warn the human before sending tiny amounts "as a test".
 
 ## 6. Funding is observed, not confirmed
 

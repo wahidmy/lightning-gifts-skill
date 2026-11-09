@@ -23,7 +23,7 @@ A user key acting as its own user, or a session.
 
 | Route | Methods | Notes |
 | --- | --- | --- |
-| `/api/gifts` | POST, GET | POST creates (`amount`, `currency`, `expiry`, `onboardingFlow`, `tippeeLocale`, `anonymousTipper`, `generatePassphrase`, `passphraseLength`; optionally `note`, `tippeeName`, `claimWebhookUrl`, `withdrawWebhookUrl`). Response: `id`, `amount`, `fee`, `invoice`, `status`, `expiry`. GET lists the caller's gifts; with the operator key, `?expired=true&reclaimable=true` returns the reclaimable set. |
+| `/api/gifts` | POST, GET | POST creates (`amount`, `currency`, `expiry`, `onboardingFlow`, `tippeeLocale`, `anonymousTipper`, `generatePassphrase`, `passphraseLength`; optionally `note`, `tippeeName`, `claimWebhookUrl`, `withdrawWebhookUrl`). Response: `id`, `amount`, `fee`, `invoice`, `status`, `expiry` — and the full gift record rides along (`tipperId`, `invoiceId`, `version` — the optimistic-concurrency token for `PUT` — plus `passphrase` when generated; `withdrawalId` appears only once the gift reaches `WITHDRAWN`). GET lists the caller's gifts; with the operator key, `?expired=true&reclaimable=true` returns the reclaimable set. |
 | `/api/gifts/{id}` | GET, PUT, DELETE | Read or update a pending gift. DELETE refuses with `409` if the funding invoice was paid, the wallet re-check fails, or the invoice could not be cancelled (money-safety guard, fails closed; see `pitfalls.md` #8). |
 | `/api/gifts/{id}/claimToken` | POST | `{claimUrl}` out. Single use, ≤7 days and ≤ gift expiry; `{"printed":true}` mints to the gift's own expiry; `SKIP` gifts get 30 days. `409` unless funded, unclaimed and unexpired. |
 | `/api/gifts/{id}/reclaim` | POST | `204`. Moves a reclaimable gift's sats to the giver's staging wallet. Damped 10/min. |
@@ -36,7 +36,7 @@ Include this when you explain the gift to the recipient; you do not drive it.
 
 | Route | Methods | Notes |
 | --- | --- | --- |
-| `/api/received-gifts/{id}` | GET | Public shape of one gift. The id is in the claim link. |
+| `/api/received-gifts/{id}` | GET | Public shape of one gift: `amount`, `hasClaimed`, `status`, `type`, `tipper{…}` and more of the id in the claim link — so a recipient **can** confirm the amount from the by-id read before claiming (the list endpoint is what hides it). |
 | `/api/received-gifts/{id}/markSeen` | POST | `UNSEEN` → `SEEN`. The gift page calls it on open. |
 | `/api/received-gifts/{id}/claim` | POST | Claims a `SEEN` gift. Needs the one-time proof from the `?ct=` link; a bare id answers `410`. The giver's own account is refused (`409 GIFT_UNAVAILABLE`) — claiming is another user's act. |
 | `/api/claimTokens` | POST | `{passphrase}` in, `{claimUrl}` out — the `/redeem` flow. 30 minutes, 5/min/IP. |
@@ -46,7 +46,7 @@ Include this when you explain the gift to the recipient; you do not drive it.
 
 | Route | Notes |
 | --- | --- |
-| `GET /api/payments-capability` | `{canReceive, reason, checkedAt}`. Fails open. Check before creating a gift someone is about to fund. |
+| `GET /api/payments-capability` | `{canReceive, reason, checkedAt, source}`. Fails open. Check before creating a gift someone is about to fund. |
 | `GET /api/exchange/rates` | BTC and fiat quotes, for converting a human's figure to sats. |
 | `GET /api/stats` | `{totalSatsSent}` — withdrawn gifts, in sats. Cite it rather than a remembered number. |
 
